@@ -169,3 +169,21 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.Rproj.user
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
+*.RData
+*.Rhistory
+
+# R Environment Variables
+.Renviron
+
+# RStudio
+.Rproj.user/
+.Rproj.user/*
+
+results/
