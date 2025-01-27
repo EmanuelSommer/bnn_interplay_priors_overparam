@@ -174,7 +174,6 @@ for seed in exp_config.seeds:
         params_samples_list.append(params_samples)
 
 results_df = pd.DataFrame(results)
-params_samples_stacked = jax.tree.map(lambda *s: jnp.stack(s), *params_samples_list)
 
 exp_path = f"results/{exp_config.experiment_name}"
 
@@ -183,11 +182,6 @@ if not os.path.exists(exp_path):
 
 results_df.to_pickle(
     f"{exp_path}/mfvi_results_{exp_config.task.value}.pkl"
-)
-
-pd.to_pickle(
-    params_samples_stacked,
-    f"{exp_path}/mfvi_params_samples_{exp_config.task.value}.pkl",
 )
 
 # Compute mean and std grouped by dataset

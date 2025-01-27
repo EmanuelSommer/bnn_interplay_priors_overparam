@@ -7,7 +7,6 @@ import pandas as pd
 import yaml
 from functools import partial
 from flax.training.train_state import TrainState
-from sklearn.metrics import accuracy_score, root_mean_squared_error
 
 from src.data import TabularLoader, ImageLoader
 from src.abi.laplace import (
@@ -198,11 +197,11 @@ for seed in exp_config.seeds:
 
 results_df = pd.DataFrame(results)
 
-if not os.path.exists("results"):
-    os.mkdir("results")
+if not os.path.exists(f"results/{exp_config.experiment_name}"):
+    os.mkdir(f"results/{exp_config.experiment_name}")
 
 results_df.to_pickle(
-    f"results/laplace_results_{exp_config.task.value}.pkl"
+    f"results/{exp_config.experiment_name}/laplace_results_{exp_config.task.value}.pkl"
 )
 
 # Compute mean and std grouped by dataset
@@ -221,6 +220,6 @@ grouped["rmse"] = grouped["rmse_mean"].round(3).astype(str) + " ± " + grouped["
 result_agg = grouped[["lppd", "rmse"]].reset_index()
 
 result_agg.to_csv(
-    f"results/laplace_results_{exp_config.task.value}_agg.csv",
+    f"results/{exp_config.experiment_name}/laplace_results_{exp_config.task.value}_agg.csv",
     index=False,
 )

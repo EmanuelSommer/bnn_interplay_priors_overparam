@@ -1,3 +1,6 @@
+# --- Experiment configuration --- #
+experiment_name: laplace_benchmark
+
 # --- LA configuration --- #
 subset_of_params: !SubParams last_layer # all, last_layer
 task: !Task regression # regression

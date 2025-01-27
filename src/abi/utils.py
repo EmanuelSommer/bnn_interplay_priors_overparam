@@ -84,6 +84,7 @@ def val_step_mlp(
 
 @dataclass
 class ExpConfigLaplace:
+    experiment_name: str = "laplace"
     # LA config
     task: Task = Task.REGRESSION
     aleatoric_var: str = "one"
