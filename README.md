@@ -7,11 +7,11 @@ This repository contains the code for the **2025 ICML submission Approximate Pos
 
 ```
 .
-├── sabi     Python scripts
-├── src      Python modules
-├── Rcode    R code
-├── data     Data files
-└── results  Git ignored directory for storing results
+├── experiments     Python scripts for experiments and plots
+    └── configs     Config files for experiments
+├── data            Data files
+├── src             Python modules
+└── results         Git ignored directory for storing results
 ```
 
 
