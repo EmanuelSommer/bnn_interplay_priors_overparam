@@ -1,13 +1,14 @@
 # SAbI
 
-This repository contains the code for the **2025 ICML submission "TBD"**.
+This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**.
 
 
 ## Project Structure
 
 ```
 .
-├── sabi     Python code
+├── sabi     Python scripts
+├── src      Python modules
 ├── Rcode    R code
 ├── data     Data files
 └── results  Git ignored directory for storing results
@@ -19,11 +20,11 @@ This repository contains the code for the **2025 ICML submission "TBD"**.
 ```bash
 git clone
 cd sabi
-# Activate your virtual environment
+# Possibly create a fresh virtual environment and activate it
 poetry install
 ```
 
-All python code can be found in the `sabi` directory. Most scripts can be run interactively
+All python scripts to generate figures and results can be found in the `sabi` directory. Most scripts can be run interactively
 using VSCode inline magic `#%%`.
 
 ## R Setup
