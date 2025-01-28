@@ -24,6 +24,8 @@ seaborn = "^0.13.2"
 optax = "^0.2.4"
 flax = "^0.10.2"
 numpyro = "^0.16.1"
+blackjax = "1.2.2"
+dataserious = {git = "https://github.com/Noza23/dataserious.git", extras = ["yaml"]}
 
 
 [build-system]
