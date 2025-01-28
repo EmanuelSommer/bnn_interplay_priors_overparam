@@ -280,50 +280,6 @@ def log_prior_eps_normal(
     return log_prior
 
 
-# def init_eps_var_normal(
-#     loc: float = 0.0, scale: float = 1.0, eps_scale: float = 0.1, offset_rng: int = 42
-# ) -> Callable[[PRNGKey, ParamTree], tuple[jax.Array, jax.Array]]:
-#     """Initialize from Normal distribution with epsilon variance offset for every param."""
-
-#     @jax.jit
-#     def rng_eps_var_normal(leaf: jax.Array, rng: PRNGKey) -> tuple[jax.Array, jax.Array]:
-#         sample = jax.random.normal(rng, shape=jnp.shape(leaf), dtype=jnp.dtype(leaf))
-#         return sample * scale + loc, leaf  # leaf is placeholder for offset shape
-
-#     def init(rng: PRNGKey, params: ParamTree) -> tuple[ParamTree, ParamTree]:
-#         rng_tree = split_key_by_tree(rng, pytree=params)
-#         params_and_shapes = jax.tree.map(rng_eps_var_normal, params, rng_tree)
-#         params = jax.tree.map(lambda x: x[0], params_and_shapes)
-        
-#         # Generate offsets using blackjax
-#         offset_key = jax.random.key(offset_rng)
-#         offsets = generate_gaussian_noise(
-#             rng_key=offset_key, 
-#             position=params,
-#             mu=0.0, 
-#             sigma=eps_scale
-#         )
-        
-#         return params, offsets
-
-#     return init
-
-# def log_prior_eps_var_normal(
-#     loc: float = 0.0, scale: float = 1.0, eps_scale: float = 0.1, offset_rng: int = 42
-# ) -> Callable[[ParamTree], jax.Array]:
-#     """Evaluate Normal prior on all weights with epsilon variance offset."""
-
-#     def log_prior(params: ParamTree) -> jax.Array:
-#         offset_key = jax.random.key(offset_rng)
-#         offsets = generate_gaussian_noise(rng_key=offset_key, position=params, mu=0.0, sigma=eps_scale)
-#         params_flat = ravel_pytree(params)[0]
-#         offsets_flat = ravel_pytree(offsets)[0]
-#         scores = stats.norm.logpdf(params_flat, loc=loc, scale=jnp.abs(offsets_flat))
-#         return jnp.sum(scores)
-
-#     return log_prior
-
-
 def init_laplace(
     loc: float = 0.0, scale: float = 1.0
 ) -> Callable[[PRNGKey, ParamTree], jax.Array]:
