@@ -1,10 +1,12 @@
 # Approximate Posteriors in Neural Networks: A Sampling Perspective
 
-This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**. Below is a view on the approximate posterior obtained by sampling ...
+This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**. Below as a teaser you can see a (marginal) view on the approximate posterior obtained by sampling ...
 
 <p align="center">
     <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="Flowchart" style="width: 50%;">
 </p>
+
+Got your attention? Then take a closer look at the paper!
 
 ## Project Structure
 
