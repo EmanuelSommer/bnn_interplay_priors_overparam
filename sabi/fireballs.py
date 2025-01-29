@@ -2,19 +2,17 @@
 import pandas as pd
 import datashader as ds
 import datashader.transfer_functions as tf
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 from datashader.mpl_ext import dsshow
 from matplotlib.colors import LinearSegmentedColormap
 import seaborn as sns
 import jax.numpy as jnp 
 import numpy as np
-import os
 
 color_start = "#7d7580"
 color_mid = "#050df5"
 color_end = "#ff00aa"
-linear_cmap = LinearSegmentedColormap.from_list("custom_cmap", [color_start, color_mid, color_end])
+linear_cmap = LinearSegmentedColormap.from_list("custom_cmap", [color_start, color_mid])
 
 def plot_bivar_density(
     w1, w2,
@@ -23,7 +21,9 @@ def plot_bivar_density(
     group=None,
     kde=False,
     kde_bandwidth=0.25,
+    plot_wh=None,
     limiter=4,
+    cmap="plasma",
     save_path="bivar_density.png",
 ):
     """
@@ -54,8 +54,8 @@ def plot_bivar_density(
             )
         else:
             sns.kdeplot(
-                data=df, x="W1", y="W2", hue="group", fill=True, bw_adjust=kde_bandwidth,
-                common_norm=False, palette="tab10", ax=ax, legend=False
+                data=df, x="W1", y="W2", hue="group", fill=False, bw_adjust=kde_bandwidth,
+                common_norm=False, palette="plasma", ax=ax, legend=False
             )
     else:
         if not kde:
@@ -63,19 +63,22 @@ def plot_bivar_density(
                 df,
                 ds.Point("W1", "W2"),
                 ds.count(),
-                # shade_hook=tf.dynspread,
+                #shade_hook=tf.dynspread,
                 width_scale=3,
                 height_scale=3,
+                plot_height=plot_wh,
+                plot_width=plot_wh,
                 norm="eq_hist",
                 aspect="equal",
                 ax=ax,
                 # blues as the colormap
-                cmap=linear_cmap,
+                cmap="plasma" if cmap == "plasma" else linear_cmap,
+                # cmap=linear_cmap,
             )
         else:
             sns.kdeplot(
                 data=df, x="W1", y="W2", fill=True, bw_adjust=kde_bandwidth,
-                common_norm=False, palette="tab10", ax=ax, legend=False)
+                common_norm=False, cmap="plasma", ax=ax, legend=False)
 
     ax.set_xlabel(xlab, fontsize=textsize)
     ax.set_ylabel(ylab, fontsize=textsize)
@@ -85,26 +88,30 @@ def plot_bivar_density(
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.5)
-    ax.set_xticks([0, -2, 2])
-    ax.set_yticks([0, -2, 2])
+    
+    if limiter is not None:
+        ax.set_xticks([0, -2, 2])
+        ax.set_yticks([0, -2, 2])
+        ax.set_xlim(-limiter, limiter)
+        ax.set_ylim(-limiter, limiter)
+
     ax.tick_params(axis='both', which='major', labelsize=textsize - 2)
     ax.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False)
-    ax.set_xlim(-limiter, limiter)
-    ax.set_ylim(-limiter, limiter)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
     plt.close(fig)
 
 # %%
-# Test the function
-w1 = jnp.load("../data/fireball/mile_bike/traces/layer0_bias0.npz")["bias"]
-w2 = jnp.load("../data/fireball/mile_bike/traces/layer0_bias1.npz")["bias"]
-filter_groups = 1000
+
+w1 = jnp.load("../results/fireball/mile_air/traces/layer1_kernel0.npz")["kernel"]
+w2 = jnp.load("../results/fireball/mile_air/traces/layer1_kernel1.npz")["kernel"]
+filter_groups = 10
+filter_samples = 1000
 group = False
 if filter_groups is not None:
-    w1 = w1[:filter_groups]
-    w2 = w2[:filter_groups]
+    w1 = w1[:filter_groups, :filter_samples]
+    w2 = w2[:filter_groups, :filter_samples]
 if not group:
     # flatten the arrays
     w1 = w1.flatten()
@@ -112,6 +119,7 @@ if not group:
     group = None
 else:
     group = jnp.repeat(jnp.arange(w1.shape[0]), w1.shape[1])
+    # make group a numpy array
     group = np.array(group)
     w1 = w1.flatten()
     w2 = w2.flatten()
@@ -119,65 +127,52 @@ else:
 
 # %%
 # Call the function
-os.makedirs("../results/figs/fireballs", exist_ok=True)
 plot_bivar_density(
     w1, w2, 
-    xlab="$w_1$", 
-    ylab="$w_2$", 
+    xlab="", 
+    ylab="", 
     group=group,
     textsize=28,
-    title=f"Kernel weights of hidden layer 1",
-    kde=False,
-    save_path="..results/figs/fireballs/bivar_density.pdf",
+    title=f"",
+    kde=True,
+    kde_bandwidth=0.5,
+    plot_wh=100,
+    save_path="bivar_density.pdf",
 )
+
 # %%
-# Now let's loop over all the layers and layer types
-layers = [i for i in range(4)]
+# now I want to construct a grid of fireballs that compares the marginal distributions both within and across layers
+# first generate the grid of plots then combine them into a single figure do one grid for biases and one for kernels
+
+layers = [i for i in range(5)]
 layer_types = ["kernel", "bias"]
-sampler = ["mile", "nuts"]
-save_id_base = "fireball_bike"
+sampler = "mile"
+save_id_base = "firegrid_air"
+subset_chains = 10
 
-os.makedirs("../results/figs/fireballs", exist_ok=True)
-
-for samp in tqdm(sampler):
-    for layer in layers:
+# generate the grid of plots
+for layer1 in layers:
+    for layer2 in layers:
         for layer_type in layer_types:
             # load data
-            w1 = jnp.load(f"../data/fireball/{samp}_bike/traces/layer{layer}_{layer_type}0.npz")[layer_type]
-            w2 = jnp.load(f"../data/fireball/{samp}_bike/traces/layer{layer}_{layer_type}1.npz")[layer_type]
+            w1 = jnp.load(f"../results/fireball/{sampler}_air/traces/layer{layer1}_{layer_type}0.npz")[layer_type]
+            w2 = jnp.load(f"../results/fireball/{sampler}_air/traces/layer{layer2}_{layer_type}1.npz")[layer_type]
             nchains = w1.shape[0]
+            w1 = w1[:, :subset_chains]
+            w2 = w2[:, :subset_chains]
 
             # first plot the full fireball
             group = None
             plot_bivar_density(
                 w1.flatten(), w2.flatten(), 
-                xlab="$w_1$", 
-                ylab="$w_2$", 
-                title=f"{nchains} Chains",
+                xlab="", 
+                ylab="", 
+                title="",
                 group=group,
                 textsize=28,
+                plot_wh=700,
                 kde=False,
-                save_path=f"../results/figs/fireballs/{save_id_base}_full_{samp}_layer{layer}_{layer_type}.pdf",
+                save_path=f"../results/figs/fireballs/{save_id_base}_{sampler}_layer{layer1}_{layer2}_{layer_type}.pdf",
             )
 
-            # now plot a subset of 10 chains with KDE
-            filter_groups = 10
-            w1 = w1[:filter_groups]
-            w2 = w2[:filter_groups]
-            group = jnp.repeat(jnp.arange(w1.shape[0]), w1.shape[1])
-            group = np.array(group)
-
-            plot_bivar_density(
-                w1.flatten(), w2.flatten(), 
-                xlab="$w_1$", 
-                ylab="$w_2$", 
-                title=f"{filter_groups} Chains",
-                group=group,
-                textsize=28,
-                kde=True,
-                kde_bandwidth=0.25 if samp == "mile" else 1.0,
-                save_path=f"../results/figs/fireballs/{save_id_base}_subset_{samp}_layer{layer}_{layer_type}.pdf",
-            )
-
-
-
+# %%
