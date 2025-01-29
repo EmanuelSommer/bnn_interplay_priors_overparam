@@ -1,4 +1,4 @@
-saving_dir: 'results/post_hoc_calibration/'
+saving_dir: 'results/scale_regr/'
 experiment_name: 'tabular_regr_mile_air'
 data:
   path: 'data/airfoil.data'
@@ -61,5 +61,4 @@ evaluations:
 evaluation_args:
   phases: [ensemble_initialization, sampling]
   n_orderings: 5
-  prior_loglik_split: valid
   samples_batch_size: 20

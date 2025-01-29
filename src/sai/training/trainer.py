@@ -637,6 +637,14 @@ class BDETrainer:
                     pred_dist=pred_dist[phase],
                     target=self.loader.data_test[1][: max_len * self.batch_size_s_test],
                 )
+        if EvaluationName.LPPD_CUM in self.config.evaluations:
+            for phase in phases:
+                evaluators[EvaluationName.LPPD_CUM].evaluate_and_save(
+                    phase=phase,
+                    pred_dist=pred_dist[phase],
+                    target=self.loader.data_test[1][: max_len * self.batch_size_s_test],
+                    n_orderings=self.config.evaluation_args["n_orderings"],
+                )
         if EvaluationName.PRED_PERF in self.config.evaluations:
             for phase in phases:
                 evaluators[EvaluationName.PRED_PERF].evaluate_and_save(

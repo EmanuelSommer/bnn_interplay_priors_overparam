@@ -25,6 +25,7 @@ class EvaluationName(str, Enum):
 
     Attributes:
         LPPD: Log pointwise predictive density. + Running LPPD.
+        LPPD_CUM: Cumulative LPPD over multiple orderings.
         PRED_PERF: Predictive performance depending on the task.
         CRHAT: chainwise Rhat for local mixing.
         ESS: Effective sample size.
@@ -34,6 +35,7 @@ class EvaluationName(str, Enum):
     """
 
     LPPD = "Lppd"
+    LPPD_CUM = "LppdCum"
     PRED_PERF = "PredPerf"
     CRHAT = "Crhat"
     ESS = "Ess"
@@ -122,6 +124,40 @@ class Lppd(Evaluator):
             phase,
         )
 
+class LppdCum(Evaluator):
+    """Multi cumulative log pointwise predictive density evaluation."""
+
+    name = EvaluationName.LPPD_CUM
+    post_predict: bool = True
+
+    def evaluate_and_save(
+        self, phase: str, pred_dist: jnp.ndarray, target: jnp.ndarray, n_orderings: int
+    ):
+        """Multi cumulative log pointwise predictive density evaluation."""
+        self.log(phase)
+        mean = jnp.zeros((pred_dist.shape[0],))
+        m2 = jnp.zeros((pred_dist.shape[0],))  # for Welford's algorithm
+        lppd_pointwise = metrics.lppd_pointwise(
+            pred_dist=pred_dist, y=target, task=self.task
+        )
+        for i in range(1, n_orderings + 1):
+            # randomly shuffle the first axis (chains) before calculating LPPD
+            lppd_pointwise = jax.random.permutation(
+                jax.random.key(i), lppd_pointwise, axis=0
+            )
+            current_lppd = metrics.running_seq_chain_lppd(lppd_pointwise=lppd_pointwise)
+            delta = current_lppd - mean
+            mean += delta / i
+            m2 += delta * (current_lppd - mean)
+        # calculate the final standard deviation
+        sd = jnp.sqrt(m2 / n_orderings)
+        self.save_results_as_npz(
+            results={
+                "mean_seq_lppd": mean,
+                "std_seq_lppd": sd,
+            },
+            phase=phase,
+        )
 
 class PredPerf(Evaluator):
     """Predictive performance evaluation."""
