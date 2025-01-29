@@ -68,6 +68,15 @@ class ProbabilisticModel:
             y: Target data of shape (batch_size, ...).
             kwargs: Additional keyword arguments to pass to the model forward pass.
         """
+        if self.task == Task.REGRESSION:
+            lvals = self.module.apply({"params": position}, x, **kwargs)
+            return jnp.nansum(
+                stats.norm.logpdf(
+                    x=y,
+                    loc=lvals[..., 0],
+                    scale=jnp.exp(lvals[..., 1]).clip(min=1e-6, max=1e6),
+                )
+            )
         if self.task == Task.MEAN_REGRESSION:
             lvals = self.module.apply({"params": position["params"]}, x, **kwargs)
             sigma = position["sigma"]

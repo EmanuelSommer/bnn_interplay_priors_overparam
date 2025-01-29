@@ -665,6 +665,9 @@ class BDETrainer:
                 using jax.pmap (requires n_devices >= len(chains)).
         """
         match self.task:
+            case Task.REGRESSION:
+                step_func = single_step_regr
+                pred_func = predict_regr
             case Task.MEAN_REGRESSION:
                 step_func = single_step_mean_regr
                 pred_func = predict_mean_regr
@@ -761,6 +764,32 @@ class BDETrainer:
 
         return state, metrics_store
 
+def single_step_regr(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> tuple[TrainState, RegressionMetrics]:
+    """Perform a single training step for regression Task."""
+
+    def loss_fn(params: ParamTree):
+        logits = state.apply_fn({"params": params}, x=x)
+        loss = bm_metrics.GaussianNLLLoss(
+            y=y,
+            mu=logits[..., 0],
+            sigma=jnp.exp(logits[..., 1]).clip(min=1e-6, max=1e6),
+        )
+        metrics = compute_metrics_regr(logits, y, step=state.step)
+        return loss.mean(), metrics
+
+    def _single_step(state: TrainState):
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (_, metrics), grads = grad_fn(state.params)
+        state = state.apply_gradients(grads=grads)
+        return state, metrics
+
+    def _fallback(state: TrainState):
+        metrics = RegressionMetrics(step=state.step, nlll=jnp.nan, rmse=jnp.nan)
+        return state, metrics
+
+    return jax.lax.cond(early_stop, _fallback, _single_step, state)
 
 def single_step_mean_regr(
     state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
@@ -785,6 +814,21 @@ def single_step_mean_regr(
 
     return jax.lax.cond(early_stop, _fallback, _single_step, state)
 
+def predict_regr(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> RegressionMetrics:
+    """Predict the model for regression Task."""
+
+    def _pred(state: TrainState, x: jnp.ndarray, y: jnp.ndarray):
+        logits = state.apply_fn({"params": state.params}, x=x)
+        return compute_metrics_regr(logits, y, step=state.step)
+
+    def _fallback(*args, **kwargs):
+        metrics = RegressionMetrics(step=state.step, nlll=jnp.nan, rmse=jnp.nan)
+        return metrics
+
+    return jax.lax.cond(early_stop, _fallback, _pred, state, x, y)
+
 
 def predict_mean_regr(
     state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
@@ -801,6 +845,16 @@ def predict_mean_regr(
 
     return jax.lax.cond(early_stop, _fallback, _pred, state, x, y)
 
+def compute_metrics_regr(
+    logits: jnp.ndarray, y: jnp.ndarray, step: jnp.ndarray = jnp.nan
+) -> RegressionMetrics:
+    """Compute the metrics for regression Task."""
+    loss = bm_metrics.GaussianNLLLoss(
+        y=y, mu=logits[..., 0], sigma=jnp.exp(logits[..., 1]).clip(min=1e-6, max=1e6)
+    )
+    se = bm_metrics.SELoss(y=y, mu=logits[..., 0])
+    metrics = RegressionMetrics(step=step, nlll=loss.mean(), rmse=jnp.sqrt(se.mean()))
+    return metrics
 
 def compute_metrics_mean_regr(
     logits: jnp.ndarray, y: jnp.ndarray, step: jnp.ndarray = jnp.nan

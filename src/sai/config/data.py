@@ -32,7 +32,8 @@ class Task(str, Enum):
         MEAN_REGRESSION: Mean Regression Task.
 
     """
-
+    
+    REGRESSION = "regr"
     MEAN_REGRESSION = "mean_regr"
 
 class DatasetType(str, Enum):

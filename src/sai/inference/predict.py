@@ -167,7 +167,7 @@ def sample_from_predictions(
     # Generate multiple keys for sampling if needed
     rng_keys = jax.random.split(rng_key, sampling_factor)
 
-    if task in (Task.MEAN_REGRESSION):
+    if task in (Task.REGRESSION, Task.MEAN_REGRESSION):
         loc = predictions[..., 0]
         scale = jnp.exp(predictions[..., 1]).clip(min=1e-6, max=1e6)
 

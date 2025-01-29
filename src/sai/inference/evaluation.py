@@ -136,7 +136,7 @@ class PredPerf(Evaluator):
         self.log(phase)
         results = {}
         match self.task:
-            case Task.MEAN_REGRESSION:
+            case Task.REGRESSION | Task.MEAN_REGRESSION:
                 results["rmse"] = metrics.rmse(
                     pred=pred_dist[..., 0], target=target
                 ).item()

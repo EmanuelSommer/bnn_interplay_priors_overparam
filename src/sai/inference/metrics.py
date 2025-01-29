@@ -243,7 +243,7 @@ def lppd_pointwise(pred_dist: jnp.ndarray, y: jnp.ndarray, task: Task) -> jnp.nd
     elif len(pred_dist.shape) == 1:
         raise ValueError("Predictions must have at least 2 dimensions.")
 
-    if task in [Task.MEAN_REGRESSION]:
+    if task in [Task.REGRESSION, Task.MEAN_REGRESSION]:
         return stats.norm.logpdf(
             x=y,
             loc=pred_dist[..., 0],
