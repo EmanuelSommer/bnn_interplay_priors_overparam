@@ -1,7 +1,10 @@
-# SAI
+# Approximate Posteriors in Neural Networks: A Sampling Perspective
 
-This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**.
+This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**. Below is a view on the approximate posterior obtained by sampling ...
 
+<p align="center">
+    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="Flowchart" style="width: 50%;">
+</p>
 
 ## Project Structure
 
@@ -21,7 +24,7 @@ This repository contains the code for the **2025 ICML submission Approximate Pos
 git clone
 cd sabi
 # Possibly create a fresh virtual environment and activate it
-poetry install --no-root
+poetry install
 ```
 
 All python scripts to generate figures and results can be found in the `experiments` directory. Most scripts can be run interactively
@@ -55,3 +58,9 @@ The results in the respective subfolder of `results/` contain:
 - Diagnostics and training logs.
 
 **Utils:** We also provide utility CLI tools that 1) aggregate multiple experiments (`experiments/pool_results.py`) and 2) save a subset of traces for large experiments (`experiments/save_traces.py`).
+
+## Figures
+
+Based on the (further aggregated) results of the experiments the figures can be generated using the scripts in the `experiments/figures` directory.
+
+> **Note:** The across and within layer grid of marginal bivariate densities of the large experiment with 10M posterior samples (`experiment/configs/scale_regr_mile.yaml`) are shipped with the repository within the `data/fireball/mile_air/marginal_densities/` folder. The two numbers like `1_2` in the file names refer to the layer indices.
