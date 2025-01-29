@@ -1,5 +1,4 @@
 import os
-
 import jax
 import jax.flatten_util
 import jax.numpy as jnp
@@ -11,12 +10,6 @@ import pandas as pd
 
 # possibly change working directory to the root of the repository
 # os.chdir(...)
-
-from src.sai.config.core import Config
-from src.sai.dataset.tabular import TabularLoader
-from src.sai.inference import metrics
-from src.sai.inference.evaluation import EvaluationName, Evaluator
-from src.sai.inference.sample_loader import SampleLoader
 
 from experiments.figures.utils import (
     load_config_and_key,

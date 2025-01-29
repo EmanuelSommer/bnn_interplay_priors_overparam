@@ -1,4 +1,4 @@
-"""various metrics for evaluating the performance of a probabilistic model."""
+"""Various metrics for evaluating the performance of a probabilistic model."""
 
 import pickle
 import warnings
@@ -14,7 +14,6 @@ import jax.scipy.stats as stats
 from flax.struct import PyTreeNode
 
 from src.sai.config.data import Task
-
 
 class Metrics(PyTreeNode):
     """Metrics base class."""
@@ -172,13 +171,6 @@ class MetricsStore(PyTreeNode):
         )
 
 
-class ClassificationMetrics(Metrics):
-    """Classification metrics."""
-
-    cross_entropy: jnp.ndarray
-    accuracy: jnp.ndarray
-
-
 class RegressionMetrics(Metrics):
     """Regression metrics."""
 
@@ -210,31 +202,12 @@ def lppd_pointwise(pred_dist: jnp.ndarray, y: jnp.ndarray, task: Task) -> jnp.nd
     Args:
         pred_dist: Predicted distribution parameters with shape (n_chains, n_samples, n_obs, ...).
 
-            - For regression: `pred_dist[..., 0]` is the mean, and `pred_dist[..., 1]` is the log-standard deviation.
-            - For classification: Contains logits for each class.
-
-        y: Target values with shape (n_obs). Continuous for regression or integer class labels for classification.
+        y: Target values with shape (n_obs).
         task: The task type.
-
-            - `Task.REGRESSION` or `Task.MEAN_REGRESSION`: Predicts mean and log-standard deviation for regression.
-            - `Task.CLASSIFICATION`: Uses logits for categorical classification.
 
     Returns:
         Pointwise LPPD values with shape (n_chains, n_samples, n_obs).
 
-    Notes:
-        - **Reshaping**: `pred_dist` is reshaped to (n_chains, n_samples, n_obs, ...) if necessary to ensure
-          consistent processing.
-        - **Regression Variance**: `exp(pred_dist[..., 1])` is used to derive the standard deviation from log-standard deviation,
-          with clipping applied to stabilize the log probability.
-        - **Classification Logits**: Logits are converted to log probabilities using `logsumexp` for numerical stability,
-          and the log probability of the target class is computed.
-
-    Reshaping Logic:
-        - The function reshapes `pred_dist` to ensure it has a 4-dimensional shape for consistent processing:
-            - 3D shape (n_samples, n_obs, ...) -> (1, n_samples, n_obs, ...)
-            - 2D shape (n_obs, ...) -> (1, 1, n_obs, ...)
-        - These reshaping rules allow flexible input shapes while maintaining consistent processing across tasks.
     """
     if len(pred_dist.shape) == 3:
         pred_dist = pred_dist.reshape(1, *pred_dist.shape)
@@ -451,13 +424,6 @@ def calibration_error_regression(
 ) -> jnp.ndarray:
     """Calculate the (squared) calibration error for regression.
 
-    The calibration error measures the deviation between the nominal coverage
-    (expected) and observed coverage (actual). It is computed as:
-
-    - Without weights: sqrt(mean((nominal_coverage - observed_coverage)**2))
-    - With weights: sqrt(mean(weights * (nominal_coverage - observed_coverage)**2))
-
-
     Args:
         nominal_coverage: The nominal coverage of the intervals.
         observed_coverage: The observed coverage of the intervals.
@@ -559,11 +525,6 @@ def calibration_error_classification(
     weights: jnp.ndarray | None = None,
 ) -> jnp.ndarray:
     """Calculate the expected calibration error (ECE) for classification.
-
-    Reference:
-        - Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017, July).
-          On calibration of modern neural networks. In International conference on
-          machine learning (pp. 1321-1330). PMLR.
 
     Args:
         calibration_gaps: The calibration gaps of shape (n_bins).
