@@ -64,14 +64,14 @@ def plot_cumulative_lppd(
 
 # %%
 # cumulative lppd
-cumulative_lppd_miles = jnp.load("../data/fireball/mile_air/LppdCum_sampling.npz")
+cumulative_lppd_miles = jnp.load("../../data/fireball/mile_air/LppdCum_sampling.npz")
 running_lppd = cumulative_lppd_miles["mean_seq_lppd"]
 sd_running_lppd = cumulative_lppd_miles["std_seq_lppd"]
 plot_cumulative_lppd(
     running_lppd=running_lppd,
     sd_running_lppd=sd_running_lppd,
     iterations=running_lppd.shape[0],
-    output_path="../results/cumulative_lppd_fireballs/cumulative_lppd_miles_air.pdf",
+    output_path="../../results/cumulative_lppd_fireballs/cumulative_lppd_miles_air.pdf",
     multiple=1,
 )
 # %%

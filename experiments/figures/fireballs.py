@@ -104,8 +104,8 @@ def plot_bivar_density(
 
 # %%
 
-w1 = jnp.load("../results/fireball/mile_air/traces/layer1_kernel0.npz")["kernel"]
-w2 = jnp.load("../results/fireball/mile_air/traces/layer1_kernel1.npz")["kernel"]
+w1 = jnp.load("../../results/fireball/mile_air/traces/layer1_kernel0.npz")["kernel"]
+w2 = jnp.load("../../results/fireball/mile_air/traces/layer1_kernel1.npz")["kernel"]
 filter_groups = 10
 filter_samples = 1000
 group = False
@@ -155,8 +155,8 @@ for layer1 in layers:
     for layer2 in layers:
         for layer_type in layer_types:
             # load data
-            w1 = jnp.load(f"../results/fireball/{sampler}_air/traces/layer{layer1}_{layer_type}0.npz")[layer_type]
-            w2 = jnp.load(f"../results/fireball/{sampler}_air/traces/layer{layer2}_{layer_type}1.npz")[layer_type]
+            w1 = jnp.load(f"../../results/fireball/{sampler}_air/traces/layer{layer1}_{layer_type}0.npz")[layer_type]
+            w2 = jnp.load(f"../../results/fireball/{sampler}_air/traces/layer{layer2}_{layer_type}1.npz")[layer_type]
             nchains = w1.shape[0]
             w1 = w1[:, :subset_chains]
             w2 = w2[:, :subset_chains]
@@ -172,7 +172,7 @@ for layer1 in layers:
                 textsize=28,
                 plot_wh=700,
                 kde=False,
-                save_path=f"../results/figs/fireballs/{save_id_base}_{sampler}_layer{layer1}_{layer2}_{layer_type}.pdf",
+                save_path=f"../../results/figs/fireballs/{save_id_base}_{sampler}_layer{layer1}_{layer2}_{layer_type}.pdf",
             )
 
 # %%
