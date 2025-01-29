@@ -1,4 +1,4 @@
-# SAbI
+# SAI
 
 This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**.
 
@@ -7,13 +7,13 @@ This repository contains the code for the **2025 ICML submission Approximate Pos
 
 ```
 .
-├── experiments     Python scripts for experiments and plots
-    └── configs     Config files for experiments
-├── data            Data files
-├── src             Python modules
-└── results         Git ignored directory for storing results
+├── experiments     Python scripts for experiments and figures.
+    └── configs     Config files for experiments.
+    └── figures     Python scripts to reproduce figures.
+├── data            Data files.
+├── src             Python modules.
+└── results         Git ignored directory for storing results.
 ```
-
 
 ## Python Setup (using poetry)
 
@@ -24,15 +24,26 @@ cd sabi
 poetry install
 ```
 
-All python scripts to generate figures and results can be found in the `sabi` directory. Most scripts can be run interactively
+All python scripts to generate figures and results can be found in the `experiments` directory. Most scripts can be run interactively
 using VSCode inline magic `#%%`.
 
-## R Setup
+## Run Experiments
 
-The R code can be found in the `Rcode` directory.
+Create a (gitignored) `results/` folder to store the results:
 
-We use R version `4.4.1` and the following packages:
+```bash
+mkdir results
+```
 
-- `ggplot2`
-- `dplyr`
-- ...
+The individual experiments can be executed in parallel across CPU cores, using the flag `-d`:
+
+```bash
+python python -m src/sai -d 12 -c experiments/configs/permuted_warmstarts.yaml
+```
+
+The results in the respective subfolder of `results/` contain:
+
+- The `config.yaml` configuration file describing the experiment.
+- The trained warm-start models inside the `warmstart/` folder.
+- The posterior samples in the `samples/` folder.
+- Diagnostics and training logs.
