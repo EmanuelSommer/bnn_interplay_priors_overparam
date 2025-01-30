@@ -16,6 +16,7 @@ Got your attention? Then take a closer look at the paper!
     └── configs     Config files for experiments.
     └── figures     Python scripts to reproduce figures.
 ├── data            Data files.
+├── Rcode           R scripts to reproduce figures.
 ├── src             Python modules.
 └── results         Git ignored directory for storing results.
 ```
@@ -64,5 +65,7 @@ The results in the respective subfolder of `results/` contain:
 ## Figures
 
 Based on the (further aggregated) results of the experiments the figures can be generated using the scripts in the `experiments/figures` directory.
+
+The source code for the figures produced with the R programming language is located in the `Rcode/` directory and was created with R version `4.4.1` and `{ggplot2}` version `3.5.1`.
 
 > **Note:** The across and within layer grid of marginal bivariate densities of the large experiment with 10M posterior samples (`experiment/configs/scale_regr_mile.yaml`) are shipped with the repository within the `data/fireball/mile_air/marginal_densities/` folder. The two numbers like `1_2` in the file names refer to the layer indices.
