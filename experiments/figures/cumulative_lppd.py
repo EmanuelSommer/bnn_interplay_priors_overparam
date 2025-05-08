@@ -75,3 +75,37 @@ plot_cumulative_lppd(
     multiple=1,
 )
 # %%
+
+cumulative_lppd_fmnist = jnp.load("../../data/fireball/LppdCum_sampling_fmnist.npz")
+running_lppd = cumulative_lppd_fmnist["mean_seq_lppd"]
+sd_running_lppd = cumulative_lppd_fmnist["std_seq_lppd"]
+plot_cumulative_lppd(
+    running_lppd=running_lppd,
+    sd_running_lppd=sd_running_lppd,
+    iterations=running_lppd.shape[0],
+    output_path="../../results/cumulative_lppd_fireballs/cumulative_lppd_fmnist.pdf",
+    multiple=1,
+)
+# %%
+cumulative_lppd_fmnist = jnp.load("../../data/fireball/LppdCum_sampling_ionosphere.npz")
+running_lppd = cumulative_lppd_fmnist["mean_seq_lppd"]
+sd_running_lppd = cumulative_lppd_fmnist["std_seq_lppd"]
+plot_cumulative_lppd(
+    running_lppd=running_lppd,
+    sd_running_lppd=sd_running_lppd,
+    iterations=running_lppd.shape[0],
+    output_path="../../results/cumulative_lppd_fireballs/cumulative_lppd_ionosphere.pdf",
+    multiple=1,
+)
+# %%
+cumulative_lppd_fmnist = jnp.load("../../data/fireball/LppdCum_sampling_bikesharing.npz")
+running_lppd = cumulative_lppd_fmnist["mean_seq_lppd"]
+sd_running_lppd = cumulative_lppd_fmnist["std_seq_lppd"]
+plot_cumulative_lppd(
+    running_lppd=running_lppd,
+    sd_running_lppd=sd_running_lppd,
+    iterations=running_lppd.shape[0],
+    output_path="../../results/cumulative_lppd_fireballs/cumulative_lppd_bikesharing.pdf",
+    multiple=1,
+)
+# %%
