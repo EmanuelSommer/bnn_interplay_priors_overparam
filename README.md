@@ -1,9 +1,9 @@
 # Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks
 
-This repository contains the code for the **2025 NeurIPS submission Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks**. Below as a teaser you can see a (marginal) view on the approximate posterior obtained by sampling ...
+This repository contains the code for the **2025 NeurIPS submission Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks**. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
 
 <p align="center">
-    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="" style="width: 40%;">
+    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="" style="width: 80%;">
 </p>
 
 Got your attention? Then take a closer look at the paper!
