@@ -27,7 +27,7 @@ from src.abi.utils import lppd, pointwise_lppd
 from src.abi.utils import Task
 
 from src.config import DataConfig
-from src.posterior_methods.torch_models import TinyResNet, TinyResNetConfigTorch
+from src.posteriors_methods.torch_models import TinyResNet, TinyResNetConfigTorch
     
 
 def predict_with_samples(model, x_data, param_samples, device):
@@ -64,7 +64,7 @@ def evaluate_in_batches(model, loader, param_samples, device):
     return all_predictions, all_true_classes
 
 
-@hydra.main(version_base=None, config_path="../src/posteriors_methods/conf_vi", config_name="config")
+@hydra.main(version_base=None, config_path="configs", config_name="mfvi_cifar10_benchmark")
 def main(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
 

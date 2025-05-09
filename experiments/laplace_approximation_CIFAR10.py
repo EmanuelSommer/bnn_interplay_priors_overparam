@@ -30,7 +30,7 @@ from src.abi.utils import (
     lppd,
 )
 
-@hydra.main(version_base=None, config_path="../src/posteriors_methods/conf_laplace", config_name="config")
+@hydra.main(version_base=None, config_path="configs", config_name="laplace_cifar10_benchmark")
 def main(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
     
