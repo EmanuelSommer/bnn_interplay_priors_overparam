@@ -27,6 +27,8 @@ numpyro = "^0.16.1"
 blackjax = "1.2.2"
 dataserious = {git = "https://github.com/Noza23/dataserious.git", extras = ["yaml"]}
 torchvision = "^0.22.0"
+posteriors = "^0.1.1"
+hydra-core = "^1.3.2"
 
 
 [build-system]

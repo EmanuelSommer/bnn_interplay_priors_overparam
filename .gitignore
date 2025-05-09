@@ -191,3 +191,5 @@ cython_debug/
 
 results/
 data/generated/*
+*.tar.gz
+outputs/

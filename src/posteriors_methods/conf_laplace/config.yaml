@@ -1,0 +1,42 @@
+hydra:
+  output_subdir: hydra_logs/posteriors_laplace
+
+model:
+  type: "tinyresnet"
+  out_dim: 10
+  activation: "relu"
+
+seeds: [0, 1, 2]
+
+data:
+  path: "./data/cifar10"
+  source: "torchvision"
+  data_type: "image"
+  task: "class"
+  normalize: true
+  train_split: 0.75
+  valid_split: 0.08334
+  test_split: 0.16666
+
+training:
+  batch_size: 64
+
+map:
+  warmstart_path: null
+  train_map: true
+  use_functional: false
+  learning_rate: 0.001
+  weight_decay: 0.02
+  maximize: false
+  n_epochs: 300
+  max_iter: 1000000
+  patience: 20
+
+laplace:
+  n_samples: 50
+  init_prec_diag: 1.0
+
+output:
+  save_dir: "results/laplace_cifar10"
+  log_interval: 100
+
