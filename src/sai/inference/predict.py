@@ -178,5 +178,10 @@ def sample_from_predictions(
         predictions = (
             jnp.concatenate(samples, axis=1) if sampling_factor > 1 else samples[0]
         )
+    elif task == Task.CLASSIFICATION:
+        samples = [
+            jax.random.categorical(rng, logits=predictions, axis=-1) for rng in rng_keys
+        ]
+        predictions = jnp.stack(samples, axis=1) if sampling_factor > 1 else samples[0]
 
     return predictions

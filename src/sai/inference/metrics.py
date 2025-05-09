@@ -170,6 +170,11 @@ class MetricsStore(PyTreeNode):
             }
         )
 
+class ClassificationMetrics(Metrics):
+    """Classification metrics."""
+
+    cross_entropy: jnp.ndarray
+    accuracy: jnp.ndarray
 
 class RegressionMetrics(Metrics):
     """Regression metrics."""
@@ -222,6 +227,12 @@ def lppd_pointwise(pred_dist: jnp.ndarray, y: jnp.ndarray, task: Task) -> jnp.nd
             loc=pred_dist[..., 0],
             scale=jnp.exp(pred_dist[..., 1]).clip(min=1e-6, max=1e6),
         )
+    elif task == Task.CLASSIFICATION:
+        log_pmf = pred_dist - jax.scipy.special.logsumexp(
+            pred_dist, axis=-1, keepdims=True
+        )
+        y = jnp.expand_dims(y, axis=(0, 1, -1))  # add chain, sample and category axes
+        return jnp.take_along_axis(log_pmf, indices=y, axis=-1).squeeze(-1)
 
 # Performance Metrics ------------------------------------------------------------
 

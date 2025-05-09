@@ -12,6 +12,7 @@ from src.sai.config.data import DataConfig
 from src.sai.types import PRNGKey
 
 
+
 class Split(str, Enum):
     """Splits of the data."""
 
@@ -146,6 +147,25 @@ class BaseLoader(ABC):
             splits.append(jnp.array([], dtype=jnp.int32))
         return {Split.TRAIN: splits[0], Split.VALID: splits[1], Split.TEST: splits[2]}
 
+    def save_splits_to_disk(self, path: str):
+        """Save the current dataset splits to disk.
+
+        Takes into account any permutation applied in load_data() (self.loading_permutation)
+        before saving indices that correspond to the original dataset ordering.
+        """
+        split_dict = {}
+
+        if hasattr(self, "loading_permutation"):
+            # Map current split indices back to original dataset indices
+            for split_name, indices in self.splits.items():
+                original_indices = self.loading_permutation[indices]
+                split_dict[split_name.value] = original_indices
+        else:
+            for split_name, indices in self.splits.items():
+                split_dict[split_name.value] = indices
+
+        jnp.savez(path, **split_dict)
+
     def shuffle(self, split: Split | str = Split.TRAIN):
         """Shuffle the data for the next dataloder iteration."""
         self.splits[split] = jax.random.permutation(self.key, self.splits[split])
@@ -168,6 +188,7 @@ class BaseLoader(ABC):
         ), "All arrays must have the same length."
 
         i_s = jax.random.permutation(self.key, jnp.arange(len_i))
+        self.loading_permutation = i_s
         shuffled = tuple(x[i_s] for x in arrays)
         return shuffled if len(shuffled) > 1 else shuffled[0]
 

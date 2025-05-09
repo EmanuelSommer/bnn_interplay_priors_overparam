@@ -1,9 +1,9 @@
-# Approximate Posteriors in Neural Networks: A Sampling Perspective
+# Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks
 
-This repository contains the code for the **2025 ICML submission Approximate Posteriors in Neural Networks: A Sampling Perspective**. Below as a teaser you can see a (marginal) view on the approximate posterior obtained by sampling ...
+This repository contains the code for the **2025 NeurIPS submission Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks**. Below as a teaser you can see a (marginal) view on the approximate posterior obtained by sampling ...
 
 <p align="center">
-    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="Flowchart" style="width: 40%;">
+    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="" style="width: 40%;">
 </p>
 
 Got your attention? Then take a closer look at the paper!
@@ -44,10 +44,10 @@ mkdir results
 The individual experiments can be executed in parallel across CPU or GPU cores (with appropriate ENV variables set for your hardware), using the flag `-d`:
 
 ```bash
-python python -m src.sai -d 12 -c experiments/configs/permuted_warmstarts.yaml
+python -m src.sai -d 12 -c experiments/configs/permuted_warmstarts.yaml
 ```
 
-When a whole grid of experiments is to be run, the `-s` argument providing a the grid is used:
+When a whole grid of experiments (e.g. an ablation study) is to be run, the `-s` argument providing a the grid (`<filename>_search.yaml`) is used:
 
 ```bash
 python -m src.sai -d 10 -c experiments/configs/mile_mean_regr_uci.yaml -s experiments/configs/tabular_search.yaml
@@ -62,7 +62,7 @@ The results in the respective subfolder of `results/` contain:
 
 **Utils:** We also provide utility CLI tools that 1) aggregate multiple experiments (`experiments/pool_results.py`) and 2) save a subset of traces for large experiments (`experiments/save_traces.py`).
 
-> **Note:** Much of the SAI code is based/inspired on the original [MILE codebase](https://anonymous.4open.science/r/MILE-1CC1/README.md) (Sommer et al., 2025).
+> **Note:** Much of the SAI code is based/inspired on the original [MILE codebase](https://github.com/EmanuelSommer/MILE) (Sommer et al., ICLR 2025).
 
 ## Figures
 

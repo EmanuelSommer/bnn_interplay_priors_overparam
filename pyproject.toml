@@ -26,6 +26,7 @@ flax = "^0.10.2"
 numpyro = "^0.16.1"
 blackjax = "1.2.2"
 dataserious = {git = "https://github.com/Noza23/dataserious.git", extras = ["yaml"]}
+torchvision = "^0.22.0"
 
 
 [build-system]

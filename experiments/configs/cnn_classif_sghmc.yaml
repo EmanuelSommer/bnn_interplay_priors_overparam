@@ -1,0 +1,65 @@
+saving_dir: 'results/scale_class/'
+experiment_name: 'cnn_classif_sghmc_fmnist'
+data:
+  path: 'data/generated/fashion_mnist'
+  source: 'torchvision'
+  data_type: 'image'
+  task: 'class'
+  target_column: null
+  target_len: 1
+  features: null
+  datapoint_limit: null
+  normalize: true
+  train_split: 0.7
+  valid_split: 0.15715
+  test_split: 0.14285
+model:
+  model: LeNetti
+  activation: 'relu'
+  out_dim: 10
+  use_bias: true
+training:
+  warmstart:
+    include: true
+    optimizer_config:
+      name: 'adamw'
+      parameters: {'learning_rate': 0.001, 'weight_decay': 0.02}
+    warmstart_exp_dir: null
+    max_epochs: 2000
+    batch_size: 64
+    patience: 10
+  sampler:
+    name: 'adasghmc'
+    epoch_wise_sampling: false
+    batch_size: 256
+    warmup_steps: 10000
+    n_chains: 1000
+    n_samples: 10000
+    use_warmup_as_init: true
+    n_thinning: 10
+    step_size: 0.001
+    mdecay: 0.05
+    n_integration_steps: 1
+    momentum_resampling: 0.05
+    temperature: 1.0
+    keep_warmup: false
+    prior_config:
+      name: 'Normal'
+      parameters: {
+        'loc': 0.0,
+        'scale': 1.0
+      }
+rng: 42
+logging: true
+logging_level: INFO
+evaluations:
+  - Predict
+  - LppdCum
+  - PredPerf
+  - Lppd
+evaluation_args:
+  phases: [ensemble_initialization, sampling]
+  n_orderings: 5
+  eval_thinning: 10
+  prior_loglik_split: valid
+  samples_batch_size: 20

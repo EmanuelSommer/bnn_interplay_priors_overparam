@@ -7,8 +7,12 @@ from blackjax import (  # maybe wrap them in kernels.py for cleaner sampling
     mclmc,
     nuts,
 )
+from src.sai.kernels.sghmc import (
+    SGHMC,
+    AdaSGHMCWarmup,
+)
 
-__all__ = ["nuts", "hmc", "mclmc"]
+__all__ = ["nuts", "hmc", "mclmc", "adasghmc"]
 
 KernelRegistry: TypeAlias = dict[str, Optional[Callable]]
 
@@ -16,7 +20,10 @@ KERNELS: KernelRegistry = {
     "nuts": nuts,
     "hmc": hmc,
     "mclmc": mclmc,
+    "adasghmc": SGHMC,
+
 }
 
 WARMUP_KERNELS: KernelRegistry = {
+    "adasghmc": AdaSGHMCWarmup,
 }

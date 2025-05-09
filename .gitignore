@@ -190,3 +190,4 @@ cython_debug/
 .Rproj.user/*
 
 results/
+data/generated/*

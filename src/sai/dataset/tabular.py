@@ -36,5 +36,8 @@ class TabularLoader(BaseLoader):
 
         if self.config.normalize:
             x = (x - x.mean(axis=0)) / x.std(axis=0)
-            y = (y - y.mean(axis=0)) / y.std(axis=0)
+            if self.config.task == Task.CLASSIFICATION:
+                y = y.astype(jnp.int32)
+            else:
+                y = (y - y.mean(axis=0)) / y.std(axis=0)
         return x, y.squeeze()

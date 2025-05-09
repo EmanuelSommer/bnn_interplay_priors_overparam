@@ -21,14 +21,16 @@ from src.sai.config.core import Config
 from src.sai.config.data import DatasetType, Task
 from src.sai.dataset.base import BaseLoader
 from src.sai.dataset.tabular import TabularLoader
+from src.sai.dataset.image import ImageLoader
 from src.sai.inference.evaluation import EvaluationName, Evaluator
 from src.sai.inference.metrics import (
     MetricsStore,
     RegressionMetrics,
+    ClassificationMetrics,
 )
 from src.sai.inference.predict import sample_from_predictions
 from src.sai.inference.sample_loader import SampleLoader
-from src.sai.training.sampling import inference_loop
+from src.sai.training.sampling import inference_loop, inference_loop_batch
 from src.sai.training.utils import earlystop, get_nn_size
 from src.sai.types import ParamTree, PRNGKey
 from src.sai.utils import measure_time, pretty_string_dict
@@ -96,6 +98,10 @@ class BDETrainer:
                 self.loader = TabularLoader(
                     config=self.config.data, rng_key=self.key, n_chains=self.n_chains
                 )
+            case DatasetType.IMAGE:
+                self.loader = ImageLoader(
+                    config=self.config.data, rng_key=self.key, n_chains=self.n_chains
+                )
             case _:
                 raise NotImplementedError(
                     f"Data Type {self.config.data.data_type} not implemented."
@@ -110,9 +116,13 @@ class BDETrainer:
 
         if self.config_sampler.batch_size is None:
             self.batch_size_s_test = len(self.loader.data_test[0])
+            self.batch_size_s_valid = len(self.loader.data_valid[0])
         else:
             self.batch_size_s_test = min(
                 self.config_sampler.batch_size, len(self.loader.data_test[0])
+            )
+            self.batch_size_s_valid = min(
+                self.config_sampler.batch_size, len(self.loader.data_valid[0])
             )
 
         self.batch_size_w = self.config_warmstart.batch_size or len(
@@ -673,6 +683,17 @@ class BDETrainer:
                 using jax.pmap (requires n_devices >= len(chains)).
         """
         match self.task:
+            case Task.CLASSIFICATION:
+                step_func = (
+                    single_step_class
+                    if state.batch_stats is None
+                    else single_step_class_batchnorm
+                )
+                pred_func = (
+                    predict_class
+                    if state.batch_stats is None
+                    else predict_class_batchnorm
+                )
             case Task.REGRESSION:
                 step_func = single_step_regr
                 pred_func = predict_regr
@@ -723,6 +744,14 @@ class BDETrainer:
                     state, batch[0], batch[1], False
                 )
                 metrics_valid.append(metrics)
+                if isinstance(metrics, ClassificationMetrics):
+                    logger.info(
+                        f"Epoch {epoch} | Validation Loss: {metrics.cross_entropy} "
+                        f"| Accuracy: {metrics.accuracy}"
+                    )
+                    valid_losses = jnp.append(
+                        valid_losses, metrics.cross_entropy[..., None], axis=-1
+                    )
                 if isinstance(metrics, RegressionMetrics):
                     logger.info(
                         f"Epoch {epoch} | Validation Loss: {metrics.nlll} "
@@ -737,21 +766,27 @@ class BDETrainer:
                 # Update best state if current validation loss is better do this individually
                 # for each chain
                 for i, loss in enumerate(valid_losses):
-                    if loss[-1] is not jnp.nan:
-                        if loss[-1] < best_valid_loss[i]:
-                            best_valid_loss[i] = loss[-1]
-                            best_state = best_state.replace(
-                                params=jax.tree_map(
-                                    lambda p, bp: bp.at[i].set(p[i]),
-                                    state.params,
-                                    best_state.params,
-                                ),
-                                batch_stats=jax.tree_map(
-                                    lambda b, bb: bb.at[i].set(b[i]),
-                                    state.batch_stats,
-                                    best_state.batch_stats,
-                                ),
+                    if loss[-1] is not jnp.nan and loss[-1] < best_valid_loss[i]:
+                        best_valid_loss[i] = loss[-1]
+                        update_map = {
+                            "params": (state.params, best_state.params),
+                            "batch_stats": (state.batch_stats, best_state.batch_stats),
+                        }
+
+                        if hasattr(state.opt_state[0], "sigma"):
+                            update_map["opt_state"] = (
+                                state.opt_state,
+                                best_state.opt_state,
                             )
+
+                        best_state = best_state.replace(
+                            **{
+                                k: jax.tree_map(
+                                    lambda p, bp: bp.at[i].set(p[i]), curr, best
+                                )
+                                for k, (curr, best) in update_map.items()
+                            }
+                        )
 
                 _stop_n += earlystop(
                     losses=valid_losses, patience=self.config_warmstart.patience
@@ -760,8 +795,14 @@ class BDETrainer:
 
         if jnp.any(_stop_n):
             state = best_state
-
-        if isinstance(metrics, RegressionMetrics):
+        
+        if isinstance(metrics, ClassificationMetrics):
+            metrics_store = MetricsStore(
+                train=ClassificationMetrics.cstack(metrics_train),
+                valid=ClassificationMetrics.cstack(metrics_valid),
+                # test=ClassificationMetrics.cstack(metrics_test),
+            )
+        elif isinstance(metrics, RegressionMetrics):
             metrics_store = MetricsStore(
                 train=RegressionMetrics.cstack(metrics_train),
                 valid=RegressionMetrics.cstack(metrics_valid),
@@ -771,6 +812,63 @@ class BDETrainer:
             raise ValueError("Metrics type not recognized.")
 
         return state, metrics_store
+    
+def single_step_class_batchnorm(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> tuple[TrainState, ClassificationMetrics]:
+    """Perform a single training step for classification Task with BatchNorm."""
+
+    def loss_fn(params: ParamTree):
+        logits, updates = state.apply_fn(
+            {"params": params, "batch_stats": state.batch_stats},
+            x=x,
+            train=True,
+            mutable=["batch_stats"],
+        )
+        loss = optax.softmax_cross_entropy(logits, jax.nn.one_hot(y, logits.shape[-1]))
+        metrics = compute_metrics_class(logits, y, step=state.step)
+        return loss.mean(), (metrics, updates)
+
+    def _single_step(state: TrainState):
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (_, (metrics, updates)), grads = grad_fn(state.params)
+        state = state.apply_gradients(grads=grads)
+        state = state.replace(batch_stats=updates["batch_stats"])
+        return state, metrics
+
+    def _fallback(state: TrainState):
+        metrics = ClassificationMetrics(
+            step=state.step, cross_entropy=jnp.nan, accuracy=jnp.nan
+        )
+        return state, metrics
+
+    return jax.lax.cond(early_stop, _fallback, _single_step, state)
+
+
+def single_step_class(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> tuple[TrainState, ClassificationMetrics]:
+    """Perform a single training step for classification Task."""
+
+    def loss_fn(params: ParamTree):
+        logits = state.apply_fn({"params": params}, x=x)
+        loss = optax.softmax_cross_entropy(logits, jax.nn.one_hot(y, logits.shape[-1]))
+        metrics = compute_metrics_class(logits, y, step=state.step)
+        return loss.mean(), metrics
+
+    def _single_step(state: TrainState):
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (_, metrics), grads = grad_fn(state.params)
+        state = state.apply_gradients(grads=grads)
+        return state, metrics
+
+    def _fallback(state: TrainState):
+        metrics = ClassificationMetrics(
+            step=state.step, cross_entropy=jnp.nan, accuracy=jnp.nan
+        )
+        return state, metrics
+
+    return jax.lax.cond(early_stop, _fallback, _single_step, state)
 
 def single_step_regr(
     state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
@@ -822,6 +920,45 @@ def single_step_mean_regr(
 
     return jax.lax.cond(early_stop, _fallback, _single_step, state)
 
+def predict_class(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> ClassificationMetrics:
+    """Predict the model for classification Task."""
+
+    def _pred(state: TrainState, x: jnp.ndarray, y: jnp.ndarray):
+        logits = state.apply_fn({"params": state.params}, x=x)
+        return compute_metrics_class(logits, y, step=state.step)
+
+    def _fallback(*args, **kwargs):
+        metrics = ClassificationMetrics(
+            step=state.step, cross_entropy=jnp.nan, accuracy=jnp.nan
+        )
+        return metrics
+
+    return jax.lax.cond(early_stop, _fallback, _pred, state, x, y)
+
+
+def predict_class_batchnorm(
+    state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
+) -> ClassificationMetrics:
+    """Predict the model for classification Task."""
+
+    def _pred(state: TrainState, x: jnp.ndarray, y: jnp.ndarray):
+        logits = state.apply_fn(
+            {"params": state.params, "batch_stats": state.batch_stats},
+            x=x,
+            train=False,
+        )
+        return compute_metrics_class(logits, y, step=state.step)
+
+    def _fallback(*args, **kwargs):
+        metrics = ClassificationMetrics(
+            step=state.step, cross_entropy=jnp.nan, accuracy=jnp.nan
+        )
+        return metrics
+
+    return jax.lax.cond(early_stop, _fallback, _pred, state, x, y)
+
 def predict_regr(
     state: TrainState, x: jnp.ndarray, y: jnp.ndarray, early_stop: bool = False
 ) -> RegressionMetrics:
@@ -862,6 +999,18 @@ def compute_metrics_regr(
     )
     se = bm_metrics.SELoss(y=y, mu=logits[..., 0])
     metrics = RegressionMetrics(step=step, nlll=loss.mean(), rmse=jnp.sqrt(se.mean()))
+    return metrics
+
+def compute_metrics_class(
+    logits: jnp.ndarray, y: jnp.ndarray, step: jnp.ndarray = jnp.nan
+) -> ClassificationMetrics:
+    """Compute the metrics for classification Task."""
+    y_one_hot = jax.nn.one_hot(x=y, num_classes=logits.shape[-1])
+    cross_entroy = optax.softmax_cross_entropy(logits=logits, labels=y_one_hot)
+    acc = jnp.mean(jnp.argmax(logits, axis=-1) == y)
+    metrics = ClassificationMetrics(
+        step=step, cross_entropy=cross_entroy.mean(), accuracy=acc
+    )
     return metrics
 
 def compute_metrics_mean_regr(

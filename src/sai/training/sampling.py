@@ -4,7 +4,7 @@ import logging
 import pickle
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 import jax
 import jax.experimental
@@ -20,6 +20,7 @@ from src.sai.dataset.base import BaseLoader
 from src.sai.kernels.base import Sampler
 from src.sai.kernels.warmup import custom_mclmc_warmup, custom_window_adaptation
 from src.sai.training.callbacks import (
+    check_balance_condition,
     progress_bar_scan,
     save_position,
 )
@@ -213,6 +214,120 @@ def inference_loop(
     with open(saving_path / "info.pkl", "wb") as f:  # type: ignore[assignment]
         pickle.dump(info, f)  # type: ignore[arg-type]
 
+def inference_loop_batch(
+    grad_estimator: GradEstimator,
+    config: SamplerConfig,
+    rng_key: jax.Array,
+    init_params: ParamTree,
+    loader: BaseLoader,
+    step_ids: jnp.ndarray,
+    saving_path: Path,
+    saving_path_warmup: Path | None = None,
+):
+    """Blackjax inference loop for mini-batch sampling.
+
+    Args:
+        grad_estimator: Grad estimator for mini-batch sampling.
+        config: Sampler configuration.
+        rng_key: Random chainwise key.
+        init_params: Initial parameters to start the sampling from.
+        loader: Data loader for the dataset.
+        step_ids: Step ids of the chain to be sampled.
+        saving_path: Path to save the samples.
+        saving_path_warmup: Path to save the warmup samples, by default None (no saving).
+
+    Note:
+        - Currently only supports `sghmc` and `adasghmc` samplers.
+    """
+    info: JsonSerializableDict = {}  # Put any information you might need later for analysis
+
+    n_devices = len(step_ids)
+    n_warmup = config.warmup_steps
+    n_samples = config.n_samples
+    n_thinning = config.n_thinning
+
+    if config.epoch_wise_sampling:
+        n_train = len(loader.data_train[0])
+        batch_size = config.batch_size or n_train
+        n_batches = n_train // batch_size
+        n_warmup = n_warmup * n_batches
+        n_samples = n_samples * n_batches
+        n_thinning = n_thinning * n_batches
+
+    logger.info(
+        f"> Running sampling with the following configuration:"
+        f"\n\t- Warmup steps: {n_warmup}"
+        f"\n\t- Sampling steps: {n_samples}"
+        f"\n\t- Thinning: {n_thinning}"
+    )
+
+    keys = jax.vmap(jax.random.split)(rng_key)
+
+    sampler_warmup = config.warmup_kernel(
+        grad_estimator=grad_estimator,
+        position=init_params,
+    )
+    if sampler_warmup is not None:
+        logger.info(f"> Starting {config.name.value} Warmup sampling...")
+        _inference_loop_batch(
+            rng_key=keys[..., 0],
+            sampler=sampler_warmup,
+            loader=loader,
+            n_samples=n_warmup,
+            batch_size=config.batch_size,
+            n_thinning=n_thinning,
+            step_size=jnp.array(config.step_size),
+            n_devices=n_devices,
+            step_ids=step_ids,
+            saving_path=saving_path_warmup,
+            optimizer=None,
+            grad_estimator=None,
+            desc="Warmup",
+        )
+        state_warmup = jax.block_until_ready(sampler_warmup.state)
+        logger.info(f"> {config.name.value} Warmup sampling completed successfully.")
+
+        if config.name == GetSampler.ADASGHMC:
+            logger.info(f"Checking balance condition for chains {step_ids}...")
+            balance_check = jax.vmap(check_balance_condition, in_axes=(0, None, None))(
+                sampler_warmup.state, config.step_size, config.mdecay
+            )
+            if jnp.all(balance_check):
+                logger.info("Warmup converged to a balanced state.")
+            else:
+                logger.warning(
+                    "Warmup didn't converge to a balanced state for chains "
+                    f"{step_ids[~balance_check]}."
+                )
+
+        sampler = config.kernel(grad_estimator=grad_estimator, state=state_warmup)
+    else:
+        sampler = config.kernel(grad_estimator=grad_estimator, position=init_params)
+
+    logger.info(f"> Starting {config.name.value} Sampling...")
+    _inference_loop_batch(
+        rng_key=keys[..., 1],
+        sampler=sampler,
+        loader=loader,
+        n_samples=n_samples,
+        batch_size=config.batch_size,
+        n_thinning=n_thinning,
+        step_size=jnp.array(config.step_size),
+        n_devices=n_devices,
+        step_ids=step_ids,
+        saving_path=saving_path,
+        optimizer=None,
+        grad_estimator=None,
+        desc="Sampling",
+    )
+    jax.block_until_ready(sampler.state)
+    logger.info(f"> {config.name.value} Sampling completed successfully.")
+
+    # Dump Information
+    with open(saving_path / "info.pkl", "wb") as f:
+        pickle.dump(info, f)
+
+
 
 def warmup_nuts(
     kernel: Kernel,
@@ -289,3 +404,68 @@ def one_sgd_step(
     updates, new_opt_state = optimizer.update(grads_scaled, opt_state)
     state.position = optax.apply_updates(state.position, updates)
     return state, new_opt_state
+
+
+def _inference_loop_batch(
+    rng_key: jax.Array,
+    sampler: Sampler,
+    loader: BaseLoader,
+    n_samples: int,
+    batch_size: int | None,
+    n_thinning: int,
+    step_size: float,
+    n_devices: int,
+    step_ids: jax.Array,
+    saving_path: Optional[Path] = None,
+    optimizer: Optional[GradientTransformation] = None,
+    grad_estimator: Optional[GradEstimator] = None,
+    desc: Optional[str] = "Sampling",
+):
+    """Blackjax inference loop for mini-batch sampling.
+
+    Args:
+        rng_key: Random chainwise keys.
+        sampler: The sampler to use.
+        loader: Data loader for the dataset.
+        saving_path: Path to save the samples.
+        n_samples: The number of samples.
+        batch_size: The batch size.
+        n_thinning: How to thin the samples.
+        step_size: The step size.
+        n_devices: The number of devices.
+        step_ids: Chain IDs.
+        optimizer: tbd.
+        grad_estimator: Grad estimator for mini-batch sampling.
+        desc: Name of the sampling loop.
+    """
+    # if optimizer is not None:
+    #     opt_state = optimizer.init(sampler.state.position)
+
+    keys = jax.vmap(jax.random.split, in_axes=(0, None))(rng_key, n_samples)
+    with tqdm(total=n_samples, desc=desc) as progress_bar:
+        _step_count = 0
+        while _step_count < n_samples:
+            for batch in loader.iter(
+                split="train",
+                batch_size=batch_size,
+                chains=step_ids,
+            ):
+
+                logger.debug(f"Sampling with step size: {step_size}")
+
+                sampler.update_state(keys[:, _step_count], batch, step_size)
+
+                if saving_path and (_step_count % n_thinning == 0):
+                    for i, chain_id in enumerate(step_ids):
+                        save_position(
+                            position=jax.tree.map(
+                                lambda x: x[i], sampler.state.position
+                            ),
+                            base=saving_path,
+                            idx=chain_id,
+                            n=_step_count,
+                        )
+                progress_bar.update(1)
+                _step_count += 1
+                if _step_count == n_samples:
+                    break

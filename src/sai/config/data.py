@@ -21,6 +21,7 @@ class Source(str, Enum):
     """
 
     LOCAL = "local"
+    TORCHVISION = "torchvision"
 
 
 class Task(str, Enum):
@@ -35,6 +36,8 @@ class Task(str, Enum):
     
     REGRESSION = "regr"
     MEAN_REGRESSION = "mean_regr"
+    CLASSIFICATION = "class"
+
 
 class DatasetType(str, Enum):
     """Data Type of the Dataset.
@@ -47,6 +50,7 @@ class DatasetType(str, Enum):
     """
 
     TABULAR = "tabular"
+    IMAGE = "image"
 
 
 class DataConfig(BaseConfig):
@@ -106,11 +110,6 @@ class DataConfig(BaseConfig):
         if self.source == Source.LOCAL:
             if not os.path.exists(self.path):
                 warnings.warn(f"File {self.path} not found.")
-        elif self.source == Source.HUGGINGFACE:
-            if not importlib.util.find_spec("datasets"):
-                raise ImportError(
-                    'Install the "datasets" module to use the HuggingFace datasets.'
-                )
         elif self.source == Source.TORCHVISION:
             if not importlib.util.find_spec("torchvision"):
                 raise ImportError(

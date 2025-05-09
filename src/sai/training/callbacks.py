@@ -12,8 +12,18 @@ from jax.flatten_util import ravel_pytree
 from tqdm import tqdm
 
 from src.sai.utils import get_flattened_keys
+from src.sai.kernels.sghmc import AdaSGHMCWarmup
 
 logger = logging.getLogger(__name__)
+
+def check_balance_condition(
+    state: AdaSGHMCWarmup.State,
+    step_size: float,
+    mdecay: float,
+):
+    """Check wheather mdecay is big enough after adaSGHMC warmup."""
+    max_sd = jnp.max(ravel_pytree(state.elementwise_sd)[0])
+    return max_sd < 2 * mdecay / jnp.square(step_size)
 
 def save_position(position, base: Path, idx: jnp.ndarray, n: jnp.ndarray):
     """Save the position of the model. TODO: Needs REFACTORING.

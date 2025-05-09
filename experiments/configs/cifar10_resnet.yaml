@@ -1,0 +1,72 @@
+saving_dir: 'results/class_bench_cifar/'
+experiment_name: 'resnet_cifar10'
+data:
+  path: 'data/generated/cifar10'
+  source: 'torchvision'
+  data_type: 'image'
+  task: 'class'
+  target_column: null
+  target_len: 1
+  features: null
+  datapoint_limit: null
+  normalize: true
+  train_split: 0.75
+  valid_split: 0.08334
+  test_split: 0.16666
+model:
+  model: TinyResNet
+  out_dim: 10
+training:
+  warmstart:
+    include: true
+    optimizer_config:
+      name: 'adamw'
+      parameters: {'learning_rate': 0.001, 'weight_decay': 0.02}
+    warmstart_exp_dir: null
+    max_epochs: 1000
+    batch_size: 64
+    patience: 20
+  sampler:
+    name: 'adasghmc'
+    epoch_wise_sampling: false
+    batch_size: 256
+    warmup_steps: 5000
+    n_chains: 10
+    n_samples: 25000
+    use_warmup_as_init: true
+    n_thinning: 250
+    step_size: 0.001
+    mdecay: 0.05
+    n_integration_steps: 1
+    momentum_resampling: 0.0
+    temperature: 1.0
+    keep_warmup: false
+    prior_config:
+      name: 'Normal'
+      parameters: {
+        'loc': 0.0,
+        'scale': 1.0
+      }
+    scheduler_config:
+      name: null
+rng: 42
+logging: true
+logging_level: INFO
+evaluations:
+  - "PredPerf"
+  - "Lppd"
+  - "Calibration"
+evaluation_args:
+  samples_batch_size: 5
+  kappa: 0.0
+  nominal_coverages:
+    - 0.1
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+    - 0.7
+    - 0.8
+    - 0.9
+    - 1.0

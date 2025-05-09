@@ -176,6 +176,11 @@ class PredPerf(Evaluator):
                 results["rmse"] = metrics.rmse(
                     pred=pred_dist[..., 0], target=target
                 ).item()
+            case Task.CLASSIFICATION:
+                majority_vote = jnp.argmax(pred_dist, axis=-1)
+                results["accuracy"] = metrics.accuracy(
+                    pred=majority_vote, target=target
+                ).item()
         self.save_results_as_json(results, phase)
 
 

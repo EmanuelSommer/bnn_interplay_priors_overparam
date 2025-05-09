@@ -141,8 +141,6 @@ plot_bivar_density(
 )
 
 # %%
-# now I want to construct a grid of fireballs that compares the marginal distributions both within and across layers
-# first generate the grid of plots then combine them into a single figure do one grid for biases and one for kernels
 
 layers = [i for i in range(5)]
 layer_types = ["kernel", "bias"]

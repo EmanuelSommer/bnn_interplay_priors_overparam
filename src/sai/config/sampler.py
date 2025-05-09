@@ -20,6 +20,7 @@ class GetSampler(str, Enum):
     NUTS = "nuts"
     MCLMC = "mclmc"
     HMC = "hmc"
+    ADASGHMC = "adasghmc"
 
     def get_kernel(self):
         """Get sampling kernel."""
@@ -40,6 +41,12 @@ class GetSampler(str, Enum):
                 f"Warmup Kernel for {self.value} is not yet implemented."
             )
         return WARMUP_KERNELS[self.value]
+    
+    def is_minibatch(self):
+        """Check if the sampler is minibatch."""
+        return self.value in [
+            GetSampler.ADASGHMC,
+        ]
 
 
 class Scheduler(str, Enum):
@@ -322,18 +329,17 @@ class SamplerConfig(BaseConfig):
     @property
     def _warmup_kwargs(self):
         """Sampler configs."""
-        if self.name.value in [GetSampler.ADASGHMC, GetSampler.SGHMC, GetSampler.SGLD]:
+        if self.name.value in [GetSampler.ADASGHMC]:
             return {
                 "num_integration_steps": self.n_integration_steps,
                 "mdecay": self.mdecay,
                 "mresampling": self.momentum_resampling,
-            }
-        elif self.name.value == GetSampler.RMSPROP:
-            return {
-                "num_integration_steps": self.n_integration_steps,
-                "mdecay": self.mdecay,
-                "mresampling": self.momentum_resampling,
-                "running_avg_factor": self.running_avg_factor,
             }
         else:
             return {}
+        
+    @property
+    def is_minibatch(self):
+        """Check if the sampler is minibatch."""
+        return self.name.is_minibatch()
+

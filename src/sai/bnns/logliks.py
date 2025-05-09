@@ -77,6 +77,25 @@ class ProbabilisticModel:
                     scale=jnp.exp(lvals[..., 1]).clip(min=1e-6, max=1e6),
                 )
             )
+        elif self.task == Task.CLASSIFICATION:
+            if "batch_stats" in position:
+                lvals = self.module.apply(
+                    {
+                        "params": position["params"],
+                        "batch_stats": position["batch_stats"],
+                    },
+                    x,
+                    train=False,
+                    **kwargs,
+                )
+            else:
+                lvals = self.module.apply({"params": position}, x, **kwargs)
+
+            log_pmf = lvals - jax.scipy.special.logsumexp(lvals, axis=-1, keepdims=True)
+            # log_pmf.shape == (batch_size, n_cat), y.shape == (batch_size, 1)
+            # ndim(log_pmf) == ndim(y) !!
+            y = jnp.expand_dims(y, axis=-1)
+            return jnp.nansum(jnp.take_along_axis(log_pmf, indices=y, axis=-1))
         if self.task == Task.MEAN_REGRESSION:
             lvals = self.module.apply({"params": position["params"]}, x, **kwargs)
             sigma = position["sigma"]
