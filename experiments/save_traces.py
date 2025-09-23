@@ -29,7 +29,27 @@ def parse_args():
         default=-1,
         help="Layer for which to save traces",
     )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=10,
+        help="Batch size for loading samples",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        default="npz",
+        choices=["npz", "csv"],
+        help="Format to save traces (npz or csv)",
+    )
     return parser.parse_args()
+
+
+def save_as_csv(data, filepath):
+    """Save array data to CSV file."""
+    with open(filepath, 'w') as f:
+        for row in data:
+            f.write(','.join(map(str, row)) + '\n')
 
 
 def main():
@@ -55,22 +75,28 @@ def main():
         samples_bias = []
         for samples_batch in tqdm(
             sample_loader.iter(
-                batch_size=10,
+                batch_size=args.batch_size,
                 chains=[i for i in range(n_chains)],
                 phase="sampling",
             )
         ):
+            if config.data.task == "mean_regr":
+                samples_batch = samples_batch["params"]
             samples_kernel.append(
                 samples_batch["fcn"][f"layer{layer}"]["kernel"][
-                    :, :, : (args.n), 0
+                    :, :, 1 : (1 + args.n), 0
                 ]
             )
-            if samples_batch["fcn"][f"layer{layer}"]["bias"].shape[2] < args.n:
+            if samples_batch["fcn"][f"layer{layer}"]["bias"].shape[2] < 3 + args.n:
                 samples_bias.append(samples_batch["fcn"][f"layer{layer}"]["bias"])
             else:
                 samples_bias.append(
                     samples_batch["fcn"][f"layer{layer}"]["bias"][
-                        :, :, : (args.n)
+                        :,
+                        :,
+                        1 : (
+                            1 + args.n
+                        ),  
                     ]
                 )
         samples_kernel = jnp.concatenate(samples_kernel, axis=1)
@@ -78,8 +104,19 @@ def main():
         for i in range(args.n):
             kernel = samples_kernel[:, :, i]
             bias = samples_bias[:, :, i]
-            jnp.savez(DIR / f"traces/layer{layer}_kernel{i}.npz", kernel=kernel)
-            jnp.savez(DIR / f"traces/layer{layer}_bias{i}.npz", bias=bias)
+            
+            if args.format == "npz":
+                jnp.savez(DIR / f"traces/layer{layer}_kernel{i}.npz", kernel=kernel)
+                jnp.savez(DIR / f"traces/layer{layer}_bias{i}.npz", bias=bias)
+            elif args.format == "csv":
+                save_as_csv(
+                    jnp.asarray(kernel), 
+                    DIR / f"traces/layer{layer}_kernel{i}.csv"
+                )
+                save_as_csv(
+                    jnp.asarray(bias), 
+                    DIR / f"traces/layer{layer}_bias{i}.csv"
+                )
 
 
 if __name__ == "__main__":

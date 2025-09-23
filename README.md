@@ -1,6 +1,6 @@
-# Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks
+# How Overparametrization Shapes Bayesian Neural Network Posteriors
 
-This repository contains the code for the **NeurIPS 2025 submission *Rethinking the Challenges of Sampling-Based Posterior Approximation in Overparametrized Neural Networks***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
+This repository contains the code for the **ICLR 2026 submission *How Overparametrization Shapes Bayesian Neural Network Posteriors***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
 
 <p align="center">
     <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="" style="width: 80%;">
