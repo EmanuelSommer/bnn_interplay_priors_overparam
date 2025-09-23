@@ -1,5 +1,7 @@
 """Fit a Laplace approximation on a UCI regression dataset."""
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import jax
 import jax.numpy as jnp
 import optax
@@ -16,9 +18,9 @@ from src.abi.laplace import (
     Task,
     SubsetOfParams,
 )
-from src.config import DataConfig, LeNetConfig
+from src.config import DataConfig
 from src.flax2bnn import ProbModelBuilder
-from src.models import MLPModelUCI, LeNet
+from src.models import MLPModelUCI
 
 from src.abi.utils import (
     constant_variance_nll,

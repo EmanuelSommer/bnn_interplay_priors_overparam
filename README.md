@@ -60,6 +60,11 @@ The results in the respective subfolder of `results/` contain:
 - The posterior samples in the `samples/` folder.
 - Diagnostics and training logs.
 
+To carry out the ABI comparison methods in the provided benchmarks, run the respective file in the `experiments` folder, e.g.,
+```bash
+python experiments/laplace_approximation_UCI.py
+```
+
 **Utils:** We also provide utility CLI tools that 1) aggregate multiple experiments (`experiments/pool_results.py`) and 2) save a subset of traces for large experiments (`experiments/save_traces.py`).
 
 > **Note:** Much of the SAI code is based/inspired on the original [MILE codebase](https://github.com/EmanuelSommer/MILE) (Sommer et al., ICLR 2025).
