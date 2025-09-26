@@ -1,9 +1,9 @@
-# How Overparametrization Shapes Bayesian Neural Network Posteriors
+# On the Interplay of Priors and Overparametrization in Bayesian Neural Network Posteriors
 
-This repository contains the code for the **ICLR 2026 submission *How Overparametrization Shapes Bayesian Neural Network Posteriors***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
+This repository contains the code for the **AISTATS 2026 submission *On the Interplay of Priors and Overparametrization in Bayesian Neural Network Posteriors***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
 
 <p align="center">
-    <img src="data/fireball/mile_air/marginal_densities/fig1.png" alt="" style="width: 80%;">
+    <img src="data/fireball/mile_air/marginal_densities/marginal_kernel_showcase.png" alt="" style="width: 80%;">
 </p>
 
 Got your attention? Then take a closer look at the paper!
@@ -60,7 +60,7 @@ The results in the respective subfolder of `results/` contain:
 - The posterior samples in the `samples/` folder.
 - Diagnostics and training logs.
 
-To carry out the ABI comparison methods in the provided benchmarks, run the respective file in the `experiments` folder, e.g.,
+To carry out the approximate Bayesian inference comparison methods in the provided benchmarks, run the respective file in the `experiments` folder, e.g.,
 ```bash
 python experiments/laplace_approximation_UCI.py
 ```
