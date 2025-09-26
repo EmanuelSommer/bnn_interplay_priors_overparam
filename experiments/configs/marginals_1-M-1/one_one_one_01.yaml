@@ -1,5 +1,5 @@
 saving_dir: 'results/figures/'
-experiment_name: 'nuts_vs_mvfi'
+experiment_name: 'one_one_one_01'
 data:
   path: 'data/synthetic_regression_1x.data'
   source: 'local'
@@ -45,8 +45,8 @@ training:
     step_size_init: 0.01
     keep_warmup: false
     prior_config:
-      name: 'StandardNormal'
-      parameters: {}
+      name: 'Normal'
+      parameters: {loc: 0.0, scale: 0.1}
 rng: 42
 logging: true
 logging_level: INFO
