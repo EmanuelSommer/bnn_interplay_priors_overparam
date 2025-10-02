@@ -67,11 +67,9 @@ python experiments/laplace_approximation_UCI.py
 
 **Utils:** We also provide utility CLI tools that 1) aggregate multiple experiments (`experiments/pool_results.py`) and 2) save a subset of traces for large experiments (`experiments/save_traces.py`).
 
-> **Note:** Much of the SAI code is based/inspired on the original [MILE codebase](https://github.com/EmanuelSommer/MILE) (Sommer et al., ICLR 2025).
-
 ## Figures
 
-Based on the (further aggregated) results of the experiments the figures can be generated using the scripts in the `experiments/figures` directory.
+Based on the (further aggregated) results of the experiments, the figures can be generated using the scripts in the `experiments/figures` directory.
 
 The source code for the figures produced with the R programming language is located in the `Rcode/` directory and was created with R version `4.4.1` and `{ggplot2}` version `3.5.1`.
 
