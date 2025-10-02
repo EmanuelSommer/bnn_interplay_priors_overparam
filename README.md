@@ -67,6 +67,8 @@ python experiments/laplace_approximation_UCI.py
 
 **Utils:** We also provide utility CLI tools that 1) aggregate multiple experiments (`experiments/pool_results.py`) and 2) save a subset of traces for large experiments (`experiments/save_traces.py`).
 
+> **Note:** Parts of the code are based on [this codebase](https://github.com/EmanuelSommer/MILE).
+
 ## Figures
 
 Based on the (further aggregated) results of the experiments, the figures can be generated using the scripts in the `experiments/figures` directory.
