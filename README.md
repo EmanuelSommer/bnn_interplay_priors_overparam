@@ -25,7 +25,7 @@ Got your attention? Then take a closer look at the paper!
 
 ```bash
 git clone
-cd sabi
+cd bnn_interplay_priors_overparam
 # Possibly create a fresh virtual environment and activate it
 poetry install
 ```
