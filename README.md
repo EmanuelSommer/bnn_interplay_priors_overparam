@@ -1,6 +1,6 @@
 # On the Interplay of Priors and Overparametrization in Bayesian Neural Network Posteriors
 
-This repository contains the code for the **AISTATS 2026 (spotlight) paper *On the Interplay of Priors and Overparametrization in Bayesian Neural Network Posteriors***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
+This repository contains the code for the paper ***On the Interplay of Priors and Overparametrization in Bayesian Neural Network Posteriors***. Below as a teaser you can see (marginal) views on various approximate posteriors obtained via sampling ...
 
 <p align="center">
     <img src="data/fireball/mile_air/marginal_densities/marginal_kernel_showcase.png" alt="" style="width: 80%;">
